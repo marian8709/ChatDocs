@@ -1,6 +1,6 @@
 {
-  "name": "Chat with Docs",
-  "description": "See the URL Context tool in action. Chat with Gemini to explore API documentation.",
+  "name": "Asistent Contabil AI",
+  "description": "Asistent inteligent pentru legislație fiscală, contabilitate și analiză de documente financiare.",
   "requestFramePermissions": [],
   "prompt": ""
 }

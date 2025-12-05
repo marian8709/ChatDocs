@@ -134,7 +134,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
           <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
             <BookOpen size={18} />
           </div>
-          <span>Knowledge Base</span>
+          <span>Registru Fiscal & Documente</span>
         </div>
         {onCloseSidebar && (
           <button
@@ -151,7 +151,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
         {/* Topic Selector */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 pl-1">
-            Active Collection
+            Colecție Activă
           </label>
           <div className="relative group">
             <select
@@ -175,11 +175,11 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
         {onGenerateMindMap && (
            <div className="space-y-2">
             <label className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-500 pl-1">
-              <span>Tools</span>
+              <span>Unelte</span>
               {hasContent && (
                 <span className="flex items-center gap-1 text-[9px] font-normal normal-case bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">
                   <Layers size={10} />
-                  Complexity
+                  Complexitate
                 </span>
               )}
             </label>
@@ -218,17 +218,17 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
               {isGeneratingMindMap ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span>Generating Map...</span>
+                  <span>Generez Structura...</span>
                 </>
               ) : (
                 <>
                   <Network size={14} />
-                  <span>Generate Mind Map</span>
+                  <span>Generează Mind Map Fiscal</span>
                 </>
               )}
             </button>
             {!hasContent && (
-               <p className="text-[10px] text-neutral-600 text-center">Add content to generate a map</p>
+               <p className="text-[10px] text-neutral-600 text-center">Adaugă conținut pentru a genera harta.</p>
             )}
            </div>
         )}
@@ -238,7 +238,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
         {/* URLs */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500 pl-1">
-            <Globe size={12} /> Web Resources
+            <Globe size={12} /> Resurse Web (ANAF/Monitor)
           </label>
           
           <div className="flex gap-2">
@@ -249,7 +249,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
                 setCurrentUrlInput(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="https://example.com"
+              placeholder="https://anaf.ro/..."
               className={`flex-1 bg-neutral-900 border text-neutral-200 placeholder-neutral-600 rounded-lg px-3 py-2 focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all ${error && error.includes('URL') ? 'border-red-900/50' : 'border-neutral-800 hover:border-neutral-700'}`}
               onKeyPress={(e) => e.key === 'Enter' && handleAddUrl()}
             />
@@ -265,7 +265,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
           <div className="space-y-1 mt-2">
              {urls.length === 0 && (
               <div className="text-neutral-600 text-xs text-center py-4 border border-dashed border-neutral-800 rounded-lg">
-                No links added yet.
+                Niciun link adăugat.
               </div>
             )}
             {urls.map((url) => (
@@ -287,7 +287,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
         {/* Documents */}
         <div className="space-y-2">
            <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500 pl-1">
-            <FileText size={12} /> Local Files
+            <FileText size={12} /> Documente (PDF/CSV/TXT)
           </label>
           
           <input 
@@ -303,7 +303,7 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
               className="w-full py-3 border border-dashed border-neutral-700 hover:border-blue-500/50 hover:bg-blue-500/5 rounded-lg text-neutral-500 hover:text-blue-400 transition-all flex items-center justify-center gap-2 text-xs font-medium group"
           >
             <Upload size={14} className="group-hover:-translate-y-0.5 transition-transform" />
-            <span>Upload Document</span>
+            <span>Încarcă Document</span>
           </button>
 
           <div className="space-y-1 mt-2">
@@ -338,8 +338,8 @@ const KnowledgeBaseManager: React.FC<KnowledgeBaseManagerProps> = ({
           </div>
         )}
         <div className="flex justify-between text-[10px] text-neutral-600 font-medium">
-          <span>{urls.length}/{maxUrls} Links</span>
-          <span>{documents.length} Files</span>
+          <span>{urls.length}/{maxUrls} Link-uri</span>
+          <span>{documents.length} Fișiere</span>
         </div>
       </div>
     </div>

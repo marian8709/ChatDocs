@@ -10,39 +10,23 @@ import KnowledgeBaseManager from './components/KnowledgeBaseManager';
 import ChatInterface from './components/ChatInterface';
 import MindMapModal from './components/MindMapModal';
 
-const GEMINI_DOCS_URLS = [
-  "https://ai.google.dev/gemini-api/docs",
-  "https://ai.google.dev/gemini-api/docs/quickstart",
-  "https://ai.google.dev/gemini-api/docs/api-key",
-  "https://ai.google.dev/gemini-api/docs/libraries",
-  "https://ai.google.dev/gemini-api/docs/models",
-  "https://ai.google.dev/gemini-api/docs/pricing",
-  "https://ai.google.dev/gemini-api/docs/rate-limits",
-  "https://ai.google.dev/gemini-api/docs/billing",
-  "https://ai.google.dev/gemini-api/docs/changelog",
+const FISCAL_URLS = [
+  "https://static.anaf.ro/static/10/Anaf/legislatie/Codul_fiscal_norme_2023.htm",
+  "https://mfinante.gov.ro/ro/web/site",
+  "https://www.anaf.ro/anaf/internet/ANAF/asistenta_contribuabili/servicii_oferite_contribuabililor/ghiduri_curente",
+  "https://www.monitoruloficial.ro/",
+  "https://ec.europa.eu/taxation_customs/vies/",
 ];
 
-const MODEL_CAPABILITIES_URLS = [
-  "https://ai.google.dev/gemini-api/docs/text-generation",
-  "https://ai.google.dev/gemini-api/docs/image-generation",
-  "https://ai.google.dev/gemini-api/docs/video",
-  "https://ai.google.dev/gemini-api/docs/speech-generation",
-  "https://ai.google.dev/gemini-api/docs/music-generation",
-  "https://ai.google.dev/gemini-api/docs/long-context",
-  "https://ai.google.dev/gemini-api/docs/structured-output",
-  "https://ai.google.dev/gemini-api/docs/thinking",
-  "https://ai.google.dev/gemini-api/docs/function-calling",
-  "https://ai.google.dev/gemini-api/docs/document-processing",
-  "https://ai.google.dev/gemini-api/docs/image-understanding",
-  "https://ai.google.dev/gemini-api/docs/video-understanding",
-  "https://ai.google.dev/gemini-api/docs/audio",
-  "https://ai.google.dev/gemini-api/docs/code-execution",
-  "https://ai.google.dev/gemini-api/docs/grounding",
+const PROCEDURI_CONTABILE_URLS = [
+  "https://www.anaf.ro/anaf/internet/ANAF/asistenta_contribuabili/declararea_obligatiilor_fiscale/toate_formularele_cu_explicatii",
+  "https://www.inspectiamuncii.ro/",
+  "https://www.onrc.ro/index.php/ro/",
 ];
 
 const INITIAL_URL_GROUPS: URLGroup[] = [
-  { id: 'gemini-overview', name: 'Gemini Docs Overview', urls: GEMINI_DOCS_URLS },
-  { id: 'model-capabilities', name: 'Model Capabilities', urls: MODEL_CAPABILITIES_URLS },
+  { id: 'legislatie', name: 'Legislație Fiscală (RO)', urls: FISCAL_URLS },
+  { id: 'proceduri', name: 'Proceduri & Formulare', urls: PROCEDURI_CONTABILE_URLS },
 ];
 
 const App: React.FC = () => {
@@ -69,9 +53,11 @@ const App: React.FC = () => {
    useEffect(() => {
     const apiKey = process.env.API_KEY;
     const currentActiveGroup = urlGroups.find(group => group.id === activeUrlGroupId);
+    
+    // Custom welcome message based on accounting context
     const welcomeMessageText = !apiKey 
-        ? 'ERROR: Gemini API Key (process.env.API_KEY) is not configured.'
-        : `Welcome! I'm ready to help you with **${currentActiveGroup?.name || 'your documents'}**. \n\nI can read the URLs on the left or any document you upload.`;
+        ? 'EROARE: Cheia API Gemini (process.env.API_KEY) nu este configurată.'
+        : `Salut! Sunt asistentul tău expert în **${currentActiveGroup?.name || 'Contabilitate'}**. \n\nPot analiza legislația fiscală, facturi, balanțe sau declarații încărcate. Cu ce te pot ajuta astăzi?`;
     
     setChatMessages([{
       id: `system-welcome-${activeUrlGroupId}-${Date.now()}`,
@@ -174,7 +160,7 @@ const App: React.FC = () => {
     } catch (e: any) {
       console.error("Failed to generate mind map", e);
       // Show cleaner message to user
-      alert(e.message || "Failed to generate mind map. Please try again.");
+      alert(e.message || "Eșec la generarea hărții mentale. Verifică cota sau încearcă din nou.");
     } finally {
       setIsGeneratingMindMap(false);
     }
@@ -187,7 +173,7 @@ const App: React.FC = () => {
     if (!apiKey) {
        setChatMessages(prev => [...prev, {
         id: `error-apikey-${Date.now()}`,
-        text: 'ERROR: API Key is not configured.',
+        text: 'EROARE: API Key nu este configurat.',
         sender: MessageSender.SYSTEM,
         timestamp: new Date(),
       }]);
@@ -206,7 +192,7 @@ const App: React.FC = () => {
     
     const modelPlaceholderMessage: ChatMessage = {
       id: `model-response-${Date.now()}`,
-      text: 'Thinking...', 
+      text: 'Analizez datele fiscale...', 
       sender: MessageSender.MODEL,
       timestamp: new Date(),
       isLoading: true,
@@ -219,16 +205,16 @@ const App: React.FC = () => {
       setChatMessages(prevMessages =>
         prevMessages.map(msg =>
           msg.id === modelPlaceholderMessage.id
-            ? { ...modelPlaceholderMessage, text: response.text || "I received an empty response.", isLoading: false, urlContext: response.urlContextMetadata }
+            ? { ...modelPlaceholderMessage, text: response.text || "Nu am primit un răspuns valid.", isLoading: false, urlContext: response.urlContextMetadata }
             : msg
         )
       );
     } catch (e: any) {
-      const errorMessage = e.message || 'Failed to get response from AI.';
+      const errorMessage = e.message || 'Eroare la comunicarea cu AI.';
       setChatMessages(prevMessages =>
         prevMessages.map(msg =>
           msg.id === modelPlaceholderMessage.id
-            ? { ...modelPlaceholderMessage, text: `Error: ${errorMessage}`, sender: MessageSender.SYSTEM, isLoading: false } 
+            ? { ...modelPlaceholderMessage, text: `Eroare: ${errorMessage}`, sender: MessageSender.SYSTEM, isLoading: false } 
             : msg
         )
       );
@@ -244,8 +230,8 @@ const App: React.FC = () => {
   const hasContext = currentUrlsForChat.length > 0 || localDocuments.length > 0;
   
   const chatPlaceholder = hasContext
-    ? `Ask anything about the ${activeGroup?.name} content...`
-    : "Select a group, add URLs, or upload documents to start.";
+    ? `Întreabă despre legislație, proceduri sau documentele din ${activeGroup?.name}...`
+    : "Selectează un grup, adaugă link-uri legislative sau încarcă documente.";
 
   return (
     <div className="h-screen max-h-screen antialiased relative overflow-hidden bg-[#09090b] text-neutral-200 selection:bg-blue-500/30">

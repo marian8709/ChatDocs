@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -68,7 +67,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <Sparkles size={14} />
             </span>
             <div>
-              <h2 className="text-sm font-semibold text-neutral-100 tracking-tight">Gemini Assistant</h2>
+              <h2 className="text-sm font-semibold text-neutral-100 tracking-tight">Expert Contabil AI</h2>
             </div>
           </div>
         </div>
@@ -80,7 +79,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {messages.length === 0 && (
              <div className="flex flex-col items-center justify-center h-[50vh] opacity-50">
                <MessageSquare size={48} className="text-neutral-700 mb-4" />
-               <p className="text-neutral-500">No messages yet.</p>
+               <p className="text-neutral-500">Începe o conversație despre fiscalitate.</p>
              </div>
           )}
           
@@ -94,14 +93,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
                       <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                      <span>Analyzing context...</span>
+                      <span>Analizez contextul fiscal...</span>
                   </div>
               </div>
           )}
 
           {showSuggestions && onSuggestedQueryClick && (
             <div className="my-6 animate-fade-in">
-              <p className="text-xs font-semibold text-neutral-500 mb-3 uppercase tracking-wider text-center">Suggested Questions</p>
+              <p className="text-xs font-semibold text-neutral-500 mb-3 uppercase tracking-wider text-center">Întrebări Sugerate</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {initialQuerySuggestions.map((suggestion, index) => (
                   <button
@@ -129,7 +128,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <textarea
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
-                placeholder={placeholderText || "Type a message..."}
+                placeholder={placeholderText || "Scrie un mesaj..."}
                 className="w-full max-h-32 min-h-[44px] py-2.5 px-3 bg-transparent text-neutral-200 placeholder-neutral-500 border-none focus:ring-0 resize-none text-sm leading-relaxed scrollbar-hide"
                 rows={1}
                 disabled={isLoading}
@@ -154,7 +153,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
             
             <div className="text-[10px] text-center mt-2 text-neutral-600">
-                Gemini can make mistakes. Please review responses.
+                AI-ul poate greși. Verifică întotdeauna informațiile cu un contabil autorizat.
             </div>
         </div>
       </div>

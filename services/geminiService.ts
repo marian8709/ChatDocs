@@ -117,6 +117,9 @@ export const generateContentWithUrlContext = async (
     fullPrompt = `${prompt}\n\nRelevant URLs for context:\n${urlList}`;
   }
   
+  // Add system persona for accounting
+  const systemInstruction = "You are an expert accountant and fiscal consultant (Expert Contabil). Respond in Romanian. Be precise, cite legal sources where possible, and analyze data carefully.";
+  
   parts.push({ text: fullPrompt });
 
   const tools: Tool[] = urls.length > 0 ? [{ urlContext: {} }] : [];
@@ -130,6 +133,7 @@ export const generateContentWithUrlContext = async (
         config: { 
           tools: tools,
           safetySettings: safetySettings,
+          systemInstruction: systemInstruction,
         },
       })
     );
@@ -151,13 +155,14 @@ export const generateContentWithUrlContext = async (
 
 export const getInitialSuggestions = async (urls: string[]): Promise<GeminiResponse> => {
   if (urls.length === 0) {
-    return { text: JSON.stringify({ suggestions: ["Add some URLs or Documents to get topic suggestions."] }) };
+    return { text: JSON.stringify({ suggestions: ["Adaugă link-uri legislative (ex: ANAF) sau încarcă documente contabile."] }) };
   }
   
   const currentAi = getAiInstance();
   const urlList = urls.join('\n');
   
-  const promptText = `Based on the content of the following documentation URLs, provide 3-4 concise and actionable questions a developer might ask to explore these documents. Return ONLY a JSON object with a key "suggestions" containing an array of these question strings.
+  // Accounting specific prompt
+  const promptText = `Based on the content of the following fiscal documentation or legal URLs, provide 3-4 concise and actionable questions a Romanian accountant, business owner, or auditor might ask. Respond in Romanian. Return ONLY a JSON object with a key "suggestions" containing an array of these question strings.
 
 Relevant URLs:
 ${urlList}`;
@@ -202,7 +207,7 @@ export const generateMindMapFromContext = async (
     });
   });
 
-  let promptContext = "Analyze the provided documents.";
+  let promptContext = "Analyze the provided fiscal documents or legislation.";
   if (urls.length > 0) {
     promptContext += ` Also consider these URLs:\n${urls.join('\n')}`;
   }
@@ -210,13 +215,13 @@ export const generateMindMapFromContext = async (
   let complexityInstruction = "";
   switch (complexity) {
     case 'simple':
-      complexityInstruction = "Create a HIGH-LEVEL overview. Limit the structure to max 2 levels deep (Root -> Main Topics -> Sub-points). Keep children count per node low (3-4 max). Focus only on big-picture concepts.";
+      complexityInstruction = "Create a HIGH-LEVEL overview. Limit the structure to max 2 levels deep (Root -> Main Topics -> Sub-points). Keep children count per node low (3-4 max). Focus on main fiscal categories.";
       break;
     case 'moderate':
-      complexityInstruction = "Create a STANDARD detailed mind map. Aim for 3 levels of depth. Include clear main topics and supporting details. Balance breadth and depth.";
+      complexityInstruction = "Create a STANDARD detailed mind map. Aim for 3 levels of depth. Include clear main topics and supporting details/articles. Balance breadth and depth.";
       break;
     case 'complex':
-      complexityInstruction = "Create a COMPREHENSIVE and DEEP mind map. Aim for 4+ levels of depth where appropriate. Break down every concept into detailed sub-nodes. Be exhaustive in capturing the content structure.";
+      complexityInstruction = "Create a COMPREHENSIVE and DEEP mind map. Aim for 4+ levels of depth. Break down every law, article, or financial concept into detailed sub-nodes.";
       break;
   }
 
@@ -224,7 +229,7 @@ export const generateMindMapFromContext = async (
   
   ${complexityInstruction}
   
-  The output MUST be a valid JSON object representing the root node.
+  The output MUST be a valid JSON object representing the root node. The content should be in Romanian.
   
   Structure format:
   {
