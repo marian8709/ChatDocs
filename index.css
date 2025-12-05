@@ -3,15 +3,48 @@
 @tailwind components;
 @tailwind utilities;
 
-body { 
-  margin: 0; 
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background-color: #09090b; /* Zinc-950 equivalent base */
-  color: #e4e4e7; /* Zinc-200 */
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 5.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Professional Royal Blue for Primary */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 4% 20%;
+    --input: 240 4% 20%;
+    --ring: 217 91% 60%;
+    
+    --radius: 0.75rem;
+  }
 }
 
-/* Custom Scrollbar */
+body {
+  @apply bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+  background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #09090b 40%);
+  background-attachment: fixed;
+}
+
+/* Scrollbar rafinat */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -20,67 +53,64 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+
+@layer components {
+  /* Glassmorphism Classes */
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
+  }
+  
+  .glass-input {
+    @apply bg-white/5 border border-white/10 focus:border-primary/50 focus:bg-white/10 transition-all duration-300;
+  }
+
+  .interactive-card {
+    @apply bg-card/50 border border-white/5 hover:border-primary/30 hover:bg-card/80 transition-all duration-300 cursor-pointer;
+  }
 }
 
 /* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98) translateY(5px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s ease-in-out infinite;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-/* Markdown Styling overrides */
-.prose {
-  max-width: none;
+.animate-fade-in-scale {
+  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.prose h1, .prose h2, .prose h3, .prose h4 {
-  color: #f4f4f5; /* Zinc-100 */
-  font-weight: 600;
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Markdown Clean Up */
+.prose h1, .prose h2, .prose h3 {
+  @apply text-white font-medium tracking-tight mt-6 mb-3;
 }
 .prose p {
-  color: #e4e4e7; /* Zinc-200 */
-  line-height: 1.6;
+  @apply text-slate-300 leading-7;
 }
 .prose strong {
-  color: #fff;
+  @apply text-white font-semibold;
 }
-.prose a {
-  color: #60a5fa; /* Blue-400 */
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-.prose a:hover {
-  color: #93c5fd; /* Blue-300 */
-  text-decoration: underline;
+.prose ul, .prose ol {
+  @apply text-slate-300 pl-4;
 }
 .prose code {
-  color: #e4e4e7;
-  background-color: rgba(255,255,255,0.1);
-  padding: 0.2em 0.4em;
-  border-radius: 0.25rem;
-  font-weight: 500;
+  @apply bg-white/10 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono border border-white/5;
 }
 .prose pre {
-  background-color: #18181b; /* Zinc-900 */
-  border: 1px solid rgba(255,255,255,0.05);
+  @apply bg-[#0f0f11] border border-white/10 rounded-xl p-4 overflow-x-auto;
 }
 .prose blockquote {
-  border-left-color: #3f3f46;
-  color: #a1a1aa;
+  @apply border-l-2 border-primary pl-4 text-slate-400 italic;
 }

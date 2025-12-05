@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -10,15 +11,29 @@ export enum MessageSender {
 }
 
 export interface UrlContextMetadataItem {
-  retrievedUrl: string; // Changed from retrieved_url
-  urlRetrievalStatus: string; // Changed from url_retrieval_status
+  retrievedUrl: string;
+  urlRetrievalStatus: string;
 }
+
+export type DocumentCategory = 'invoice_in' | 'invoice_out' | 'bank_statement' | 'contract' | 'fiscal_doc' | 'general';
 
 export interface LocalDocument {
   id: string;
+  companyId: string; // Legatura cu firma
   name: string;
   mimeType: string;
-  base64Data: string; // Raw base64 string (without data:mime;base64 prefix)
+  base64Data: string;
+  category: DocumentCategory;
+  timestamp: number;
+}
+
+export interface CompanyProfile {
+  id: string; // Identificator unic
+  name: string;
+  cui: string;
+  regCom?: string;
+  activity?: string;
+  foundedYear?: string;
 }
 
 export interface ChatMessage {
@@ -43,3 +58,5 @@ export interface MindMapData {
 }
 
 export type MindMapComplexity = 'simple' | 'moderate' | 'complex';
+
+export type AiModel = 'gemini-2.5-flash' | 'gemini-flash-lite-latest' | 'gemini-3-pro-preview';

@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -5,15 +6,16 @@
 
 
 import { GoogleGenAI, GenerateContentResponse, Tool, HarmCategory, HarmBlockThreshold, Content, Part, Type } from "@google/genai";
-import { UrlContextMetadataItem, LocalDocument, MindMapData, MindMapComplexity } from '../types';
+import { UrlContextMetadataItem, LocalDocument, MindMapData, MindMapComplexity, CompanyProfile } from '../types';
 
 // IMPORTANT: The API key MUST be set as an environment variable `process.env.API_KEY`
 const API_KEY = process.env.API_KEY;
 
 let ai: GoogleGenAI;
 
-// Model supporting URL context and multimodal inputs.
-const MODEL_NAME = "gemini-2.5-flash"; 
+// Default model supporting URL context and multimodal inputs.
+const DEFAULT_MODEL_NAME = "gemini-2.5-flash"; 
+const FALLBACK_MODEL_NAME = "gemini-1.5-flash";
 
 const getAiInstance = (): GoogleGenAI => {
   if (!API_KEY) {
@@ -38,14 +40,10 @@ interface GeminiResponse {
   urlContextMetadata?: UrlContextMetadataItem[];
 }
 
-/**
- * Retries an async operation with exponential backoff if a 429 (Quota Exceeded) error occurs.
- */
 async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
   try {
     return await operation();
   } catch (error: any) {
-    // Check for rate limit/quota errors in various formats
     const isQuotaError = 
       error?.status === 429 || 
       error?.code === 429 ||
@@ -64,24 +62,16 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay
   }
 }
 
-/**
- * Parses and throws a user-friendly error message.
- */
 const handleApiError = (error: any, defaultMsg: string): never => {
   console.error(defaultMsg, error);
   if (error instanceof Error) {
     const googleError = error as any; 
-    
-    // Check for API Key issues
     if (googleError.message && googleError.message.includes("API key not valid")) {
        throw new Error("Invalid API Key. Please check your GEMINI_API_KEY environment variable.");
     }
-    
-    // Check for Quota issues explicit throw
     if (googleError.status === 429 || (googleError.message && googleError.message.includes("quota"))) {
       throw new Error("API Quota Exceeded. Please try again later or check your billing details.");
     }
-
     if (googleError.type === 'GoogleGenAIError' && googleError.message) {
       throw new Error(`Gemini API Error: ${googleError.message}`);
     }
@@ -90,35 +80,75 @@ const handleApiError = (error: any, defaultMsg: string): never => {
   throw new Error(defaultMsg);
 };
 
+async function withFallback(
+  operation: (model: string) => Promise<GenerateContentResponse>, 
+  preferredModel: string
+): Promise<GenerateContentResponse> {
+  try {
+    return await retryOperation(() => operation(preferredModel));
+  } catch (error: any) {
+    const isNotFoundError = 
+      error?.status === 404 || 
+      error?.code === 404 || 
+      (error?.message && error.message.includes('404')) ||
+      (error?.message && error.message.includes('not found'));
+
+    if (isNotFoundError) {
+      console.warn(`Model ${preferredModel} not found (404). Falling back to ${FALLBACK_MODEL_NAME}.`);
+      return await retryOperation(() => operation(FALLBACK_MODEL_NAME));
+    }
+    throw error;
+  }
+}
+
 export const generateContentWithUrlContext = async (
   prompt: string,
   urls: string[],
-  documents: LocalDocument[] = []
+  documents: LocalDocument[] = [],
+  company: CompanyProfile | null,
+  modelName: string = DEFAULT_MODEL_NAME
 ): Promise<GeminiResponse> => {
   const currentAi = getAiInstance();
   
-  // Construct the parts array
   const parts: Part[] = [];
 
-  // 1. Add Documents (Images, PDFs, Text files) as inlineData
-  documents.forEach(doc => {
-    parts.push({
-      inlineData: {
-        mimeType: doc.mimeType,
-        data: doc.base64Data
-      }
-    });
-  });
+  // Group documents contextually in the prompt
+  let docContext = "";
+  if (documents.length > 0) {
+     docContext = "Attached Documents:\n";
+     documents.forEach(doc => {
+        docContext += `- [${doc.category.toUpperCase()}] ${doc.name}\n`;
+        parts.push({
+          inlineData: {
+            mimeType: doc.mimeType,
+            data: doc.base64Data
+          }
+        });
+     });
+  }
 
-  // 2. Add the text prompt
   let fullPrompt = prompt;
   if (urls.length > 0) {
-    const urlList = urls.join('\n');
-    fullPrompt = `${prompt}\n\nRelevant URLs for context:\n${urlList}`;
+    fullPrompt = `${prompt}\n\nExternal Legal/Fiscal Sources:\n${urls.join('\n')}`;
   }
   
-  // Add system persona for accounting
-  const systemInstruction = "You are an expert accountant and fiscal consultant (Expert Contabil). Respond in Romanian. Be precise, cite legal sources where possible, and analyze data carefully.";
+  if (docContext) {
+    fullPrompt += `\n\n${docContext}`;
+  }
+  
+  // Custom System Persona
+  let companyContext = "";
+  if (company) {
+    companyContext = `You are acting as the Chief Accountant for the company: "${company.name}" (CUI: ${company.cui}). Activity: ${company.activity}.`;
+  } else {
+    companyContext = "You are an expert accountant.";
+  }
+
+  const systemInstruction = `${companyContext} 
+  Respond in Romanian. 
+  Your goal is to organize financial data, interpret invoices/statements, and ensure fiscal compliance (Codul Fiscal).
+  When analyzing documents, refer to them by their specific category (Invoice, Statement, etc.).
+  Be professional, precise, and helpful.`;
   
   parts.push({ text: fullPrompt });
 
@@ -126,16 +156,17 @@ export const generateContentWithUrlContext = async (
   const contents: Content[] = [{ role: "user", parts: parts }];
 
   try {
-    const response: GenerateContentResponse = await retryOperation(() => 
+    const response = await withFallback((model) => 
       currentAi.models.generateContent({
-        model: MODEL_NAME,
+        model: model,
         contents: contents,
         config: { 
           tools: tools,
           safetySettings: safetySettings,
           systemInstruction: systemInstruction,
         },
-      })
+      }), 
+      modelName
     );
 
     const text = response.text;
@@ -153,42 +184,31 @@ export const generateContentWithUrlContext = async (
   }
 };
 
-export const getInitialSuggestions = async (urls: string[]): Promise<GeminiResponse> => {
+export const getInitialSuggestions = async (urls: string[], modelName: string = DEFAULT_MODEL_NAME): Promise<GeminiResponse> => {
   if (urls.length === 0) {
-    return { text: JSON.stringify({ suggestions: ["Adaugă link-uri legislative (ex: ANAF) sau încarcă documente contabile."] }) };
+    return { text: JSON.stringify({ suggestions: ["Analizează situația fiscală a firmei.", "Verifică deductibilitatea facturilor.", "Calculează TVA de plată."] }) };
   }
   
   const currentAi = getAiInstance();
-  const urlList = urls.join('\n');
-  
-  // Accounting specific prompt
-  const promptText = `Based on the content of the following fiscal documentation or legal URLs, provide 3-4 concise and actionable questions a Romanian accountant, business owner, or auditor might ask. Respond in Romanian. Return ONLY a JSON object with a key "suggestions" containing an array of these question strings.
-
-Relevant URLs:
-${urlList}`;
+  const promptText = `Based on the provided fiscal documentation, suggest 3 questions a company owner would ask their accountant. Return ONLY JSON: {"suggestions": ["q1", "q2"]}`;
 
   const contents: Content[] = [{ role: "user", parts: [{ text: promptText }] }];
 
   try {
-    // We retry suggestions too, but maybe fewer times to avoid blocking the UI load
     const response: GenerateContentResponse = await retryOperation(() => 
       currentAi.models.generateContent({
-        model: MODEL_NAME,
+        model: modelName, 
         contents: contents,
         config: {
           safetySettings: safetySettings,
           responseMimeType: "application/json", 
         },
       }), 
-      1, // Fewer retries for non-critical path
-      1000
+      1, 1000
     );
-
     return { text: response.text }; 
 
   } catch (error) {
-    console.warn("Error fetching suggestions (silenced):", error);
-    // Return empty suggestion set instead of throwing, so the main app doesn't break
     return { text: JSON.stringify({ suggestions: [] }) };
   }
 };
@@ -196,7 +216,8 @@ ${urlList}`;
 export const generateMindMapFromContext = async (
   urls: string[],
   documents: LocalDocument[],
-  complexity: MindMapComplexity = 'moderate'
+  complexity: MindMapComplexity = 'moderate',
+  modelName: string = DEFAULT_MODEL_NAME
 ): Promise<MindMapData> => {
   const currentAi = getAiInstance();
   const parts: Part[] = [];
@@ -207,64 +228,41 @@ export const generateMindMapFromContext = async (
     });
   });
 
-  let promptContext = "Analyze the provided fiscal documents or legislation.";
-  if (urls.length > 0) {
-    promptContext += ` Also consider these URLs:\n${urls.join('\n')}`;
-  }
-
+  let promptContext = "Analyze the provided company documents and fiscal context.";
+  
   let complexityInstruction = "";
   switch (complexity) {
     case 'simple':
-      complexityInstruction = "Create a HIGH-LEVEL overview. Limit the structure to max 2 levels deep (Root -> Main Topics -> Sub-points). Keep children count per node low (3-4 max). Focus on main fiscal categories.";
+      complexityInstruction = "Create a HIGH-LEVEL overview of the company's financial status or legal structure.";
       break;
     case 'moderate':
-      complexityInstruction = "Create a STANDARD detailed mind map. Aim for 3 levels of depth. Include clear main topics and supporting details/articles. Balance breadth and depth.";
+      complexityInstruction = "Create a detailed map of financial flows, obligations, or document relationships.";
       break;
     case 'complex':
-      complexityInstruction = "Create a COMPREHENSIVE and DEEP mind map. Aim for 4+ levels of depth. Break down every law, article, or financial concept into detailed sub-nodes.";
+      complexityInstruction = "Create a COMPREHENSIVE audit map breaking down every transaction type, legal obligation, and risk.";
       break;
   }
 
-  const promptText = `${promptContext}
-  
-  ${complexityInstruction}
-  
-  The output MUST be a valid JSON object representing the root node. The content should be in Romanian.
-  
-  Structure format:
-  {
-    "label": "Main Topic",
-    "details": "Optional short description",
-    "children": [
-      {
-        "label": "Subtopic 1",
-        "details": "Key point",
-        "children": [...]
-      }
-    ]
-  }
-
-  Ensure labels are concise (max 5-7 words).
-  Return ONLY the JSON.`;
+  const promptText = `${promptContext} ${complexityInstruction} Return ONLY JSON structure: { "label": "Main", "children": [...] }`;
 
   parts.push({ text: promptText });
   const contents: Content[] = [{ role: "user", parts: parts }];
   
   try {
-    const response: GenerateContentResponse = await retryOperation(() => 
+    const response = await withFallback((model) => 
       currentAi.models.generateContent({
-        model: MODEL_NAME,
+        model: model,
         contents: contents,
         config: {
           responseMimeType: "application/json",
           safetySettings: safetySettings
         }
-      })
+      }),
+      modelName
     );
 
     const jsonStr = response.text;
     if (!jsonStr) throw new Error("No data returned for Mind Map");
-    
     const parsed = JSON.parse(jsonStr);
     return parsed as MindMapData;
 
